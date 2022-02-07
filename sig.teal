@@ -1,0 +1,7 @@
+#pragma version 5
+arg 0
+pushbytes 0x73756363656564 // "succeed"
+==
+assert
+pushint 1 // 1
+return

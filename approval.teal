@@ -1,0 +1,63 @@
+#pragma version 5
+intcblock 0 1
+txn ApplicationID
+intc_0 // 0
+==
+bnz main_l16
+txn OnCompletion
+pushint 5 // DeleteApplication
+==
+bnz main_l15
+txn OnCompletion
+pushint 4 // UpdateApplication
+==
+bnz main_l14
+txn OnCompletion
+pushint 2 // CloseOut
+==
+bnz main_l13
+txn OnCompletion
+intc_1 // OptIn
+==
+bnz main_l12
+txn OnCompletion
+intc_0 // NoOp
+==
+bnz main_l7
+err
+main_l7:
+txna ApplicationArgs 0
+pushbytes 0x73756363656564 // "succeed"
+==
+bnz main_l11
+txna ApplicationArgs 0
+pushbytes 0x6661696c // "fail"
+==
+bnz main_l10
+err
+main_l10:
+intc_0 // 0
+b main_l17
+main_l11:
+intc_1 // 1
+b main_l17
+main_l12:
+intc_0 // 0
+b main_l17
+main_l13:
+intc_0 // 0
+b main_l17
+main_l14:
+txn Sender
+global CreatorAddress
+==
+b main_l17
+main_l15:
+txn Sender
+global CreatorAddress
+==
+b main_l17
+main_l16:
+intc_1 // 1
+main_l17:
+return

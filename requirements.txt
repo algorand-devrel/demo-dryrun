@@ -1,0 +1,7 @@
+cffi==1.15.0
+msgpack==1.0.3
+-e git+git@github.com:algorand/py-algorand-sdk.git@edd83282e4e6c87e11636e595608e02296ec05af#egg=py_algorand_sdk
+pycparser==2.21
+pycryptodomex==3.14.1
+PyNaCl==1.5.0
+pyteal==0.9.1
