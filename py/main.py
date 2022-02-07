@@ -10,11 +10,12 @@ from sandbox import get_accounts
 
 path = os.path.dirname(os.path.abspath(__file__))
 
-client = algod.AlgodClient("a"*64, "http://127.0.0.1:4001")
+client = algod.AlgodClient("a" * 64, "http://127.0.0.1:4001")
 
 arg = "succeed"
-if len(sys.argv)>1:
+if len(sys.argv) > 1:
     arg = sys.argv[1]
+
 
 def do_dryrun():
     accts = get_accounts()
@@ -33,12 +34,14 @@ def do_dryrun():
 
     # create trnansactions we wish to test
     pay_txn = PaymentTxn(addr, sp, lsa.address(), 10000)
-    app_txn = ApplicationCallTxn(lsa.address(), sp, app_id, OnComplete.NoOpOC, app_args=[arg])
+    app_txn = ApplicationCallTxn(
+        lsa.address(), sp, app_id, OnComplete.NoOpOC, app_args=[arg]
+    )
 
     # set group id
     assign_group_id([pay_txn, app_txn])
 
-    #sign them
+    # sign them
     spay_txn = pay_txn.sign(pk)
     sapp_txn = LogicSigTransaction(app_txn, lsa)
 
@@ -54,30 +57,33 @@ def do_dryrun():
             print("\nLsig Mesages\n{}".format(txn.logic_sig_messages))
             print("\nLsig Trace\n{}".format(txn.lsig_trace(0)))
 
+
 def deploy_app(addr, pk) -> int:
     with open(os.path.join(path, "../approval.teal"), "r") as f:
         approval_src = f.read().strip()
 
-    res = client.compile(approval_src) 
-    approval = b64decode(res['result'])
+    res = client.compile(approval_src)
+    approval = b64decode(res["result"])
 
     with open(os.path.join(path, "../clear.teal"), "r") as f:
         clear_src = f.read().strip()
 
-    res = client.compile(clear_src) 
-    clear = b64decode(res['result'])
+    res = client.compile(clear_src)
+    clear = b64decode(res["result"])
 
     sp = client.suggested_params()
 
-    no_schema = StateSchema(0,0)
-    create = ApplicationCreateTxn(addr, sp, OnComplete.NoOpOC, approval, clear, no_schema, no_schema)
+    no_schema = StateSchema(0, 0)
+    create = ApplicationCreateTxn(
+        addr, sp, OnComplete.NoOpOC, approval, clear, no_schema, no_schema
+    )
     signed = create.sign(pk)
 
     txid = client.send_transaction(signed)
 
     res = wait_for_confirmation(client, txid, 3)
 
-    return res['application-index']
+    return res["application-index"]
 
 
 def get_lsig() -> LogicSigAccount:
@@ -85,8 +91,7 @@ def get_lsig() -> LogicSigAccount:
         program = f.read().strip()
 
     res = client.compile(program)
-    return LogicSigAccount(b64decode(res['result']))
-
+    return LogicSigAccount(b64decode(res["result"]))
 
 
 if __name__ == "__main__":

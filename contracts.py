@@ -2,12 +2,10 @@ from pyteal import *
 
 succeed = Bytes("succeed")
 
+
 def approval():
     is_app_creator = Txn.sender() == Global.creator_address()
-    checker = Seq(
-        Assert(Txn.application_args[0] == succeed),
-        Int(1)
-    )
+    checker = Seq(Assert(Txn.application_args[0] == succeed), Int(1))
     return Cond(
         [Txn.application_id() == Int(0), Int(1)],
         [Txn.on_completion() == OnComplete.DeleteApplication, is_app_creator],
@@ -17,17 +15,18 @@ def approval():
         [Txn.on_completion() == OnComplete.NoOp, checker],
     )
 
+
 def clear():
     return Approve()
 
+
 def lsig():
-    return Seq(
-        Assert(Gtxn[1].application_args[0] == succeed),
-        Int(1)
-    )
+    return Seq(Assert(Gtxn[1].application_args[0] == succeed), Int(1))
+
 
 if __name__ == "__main__":
     import os
+
     path = os.path.dirname(os.path.abspath(__file__))
 
     with open(os.path.join(path, "approval.teal"), "w") as f:
@@ -46,7 +45,5 @@ if __name__ == "__main__":
 
     with open(os.path.join(path, "sig.teal"), "w") as f:
         f.write(
-            compileTeal(
-                lsig(), mode=Mode.Signature, version=5, assembleConstants=True
-            )
+            compileTeal(lsig(), mode=Mode.Signature, version=5, assembleConstants=True)
         )
