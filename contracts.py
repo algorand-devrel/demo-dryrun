@@ -1,34 +1,28 @@
 from pyteal import *
 
+succeed = Bytes("succeed")
 
 def approval():
-    succeed = Bytes("succeed")
-    fail = Bytes("fail")
-
     is_app_creator = Txn.sender() == Global.creator_address()
-
-    router = Cond(
-        [Txn.application_args[0] == succeed, Int(1)],
-        [Txn.application_args[0] == fail, Int(0)]
+    checker = Seq(
+        Assert(Txn.application_args[0] == succeed),
+        Int(1)
     )
-
     return Cond(
         [Txn.application_id() == Int(0), Int(1)],
         [Txn.on_completion() == OnComplete.DeleteApplication, is_app_creator],
         [Txn.on_completion() == OnComplete.UpdateApplication, is_app_creator],
         [Txn.on_completion() == OnComplete.CloseOut, Int(0)],
         [Txn.on_completion() == OnComplete.OptIn, Int(0)],
-        [Txn.on_completion() == OnComplete.NoOp, router],
+        [Txn.on_completion() == OnComplete.NoOp, checker],
     )
-
 
 def clear():
     return Approve()
 
-
 def lsig():
     return Seq(
-        Assert(Arg(0) == Bytes("succeed")),
+        Assert(Gtxn[1].application_args[0] == succeed),
         Int(1)
     )
 

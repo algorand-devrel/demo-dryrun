@@ -1,14 +1,12 @@
-from pydoc import cli
-from algosdk import *
 from algosdk.transaction import assign_group_id
 from algosdk.v2client import algod
-from algosdk.future.transaction import * 
-from algosdk import encoding
+from algosdk.future.transaction import *
+from algosdk.dryrun_results import DryrunResponse
 from base64 import b64decode
 import os
+import sys
 
 from sandbox import get_accounts
-
 
 path = os.path.dirname(os.path.abspath(__file__))
 
@@ -30,18 +28,23 @@ def do_dryrun():
 
     sp = client.suggested_params()
 
+    arg = "succeed"
+    if len(sys.argv)>1:
+        arg = sys.argv[1]
+
     pay_txn = PaymentTxn(addr, sp, lsa.address(), 10000)
-    app_txn = ApplicationCallTxn(lsa.address(), sp, app_id, OnComplete.NoOpOC, app_args=["fail"])
+    app_txn = ApplicationCallTxn(lsa.address(), sp, app_id, OnComplete.NoOpOC, app_args=[arg])
 
     assign_group_id([pay_txn, app_txn])
 
     spay_txn = pay_txn.sign(pk)
 
-    lsa.lsig.args = ["fail".encode()]
-    sapp_txn = transaction.LogicSigTransaction(app_txn, lsa)
+    sapp_txn = LogicSigTransaction(app_txn, lsa)
 
+    # Create the dryrun request object from the transactions
     drr = create_dryrun(client, [spay_txn, sapp_txn])
-    resp = dryrun_results.DryrunResponse(client.dryrun(drr))
+
+    resp = DryrunResponse(client.dryrun(drr))
     for txn in resp.txns:
         if txn.app_call_rejected():
             print("\nApp Mesages\n{}".format(txn.app_call_messages))

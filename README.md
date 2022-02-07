@@ -15,9 +15,3 @@ pip install -r requirements.txt
 cd py
 python main.py 
 ```
-
-
-
-
-
-

@@ -1,5 +1,5 @@
 #pragma version 5
-arg 0
+gtxna 1 ApplicationArgs 0
 pushbytes 0x73756363656564 // "succeed"
 ==
 assert
