@@ -12,10 +12,13 @@ path = os.path.dirname(os.path.abspath(__file__))
 
 client = algod.AlgodClient("a"*64, "http://127.0.0.1:4001")
 
+arg = "succeed"
+if len(sys.argv)>1:
+    arg = sys.argv[1]
+
 def do_dryrun():
     accts = get_accounts()
-
-    (addr, pk) = accts[1]
+    (addr, pk) = accts[0]
 
     app_id = deploy_app(addr, pk)
     app_addr = logic.get_application_address(app_id)
@@ -23,22 +26,20 @@ def do_dryrun():
 
     lsa = get_lsig()
     sig_addr = lsa.address()
-
     print("Created logic sig with address: {}".format(sig_addr))
 
+    # Get params for txns
     sp = client.suggested_params()
 
-    arg = "succeed"
-    if len(sys.argv)>1:
-        arg = sys.argv[1]
-
+    # create trnansactions we wish to test
     pay_txn = PaymentTxn(addr, sp, lsa.address(), 10000)
     app_txn = ApplicationCallTxn(lsa.address(), sp, app_id, OnComplete.NoOpOC, app_args=[arg])
 
+    # set group id
     assign_group_id([pay_txn, app_txn])
 
+    #sign them
     spay_txn = pay_txn.sign(pk)
-
     sapp_txn = LogicSigTransaction(app_txn, lsa)
 
     # Create the dryrun request object from the transactions
