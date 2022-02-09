@@ -28,7 +28,8 @@ const client = new algosdk.Algodv2("a".repeat(64), "http://127.0.0.1", "4001");
   const appCallTxn = makeApplicationNoOpTxnFromObject({
     from: lsig.address(),
     appIndex: appId,
-    appArgs: [new Uint8Array(Buffer.from("success"))],
+    //appArgs: [new Uint8Array(Buffer.from("succeed"))],
+    appArgs: [new Uint8Array(Buffer.from("fail"))],
     suggestedParams: sp,
   }) 
 
@@ -45,17 +46,18 @@ const client = new algosdk.Algodv2("a".repeat(64), "http://127.0.0.1", "4001");
 
 
   const drr = await algosdk.createDryrun({
-    client: client,
-    txns: signed,
+    client: client, txns: signed,
   })
 
-
   const drr_result = await client.dryrun(drr).do()
+
   const parsed = new algosdk.DryrunResult(drr_result)
 
   for(const t of parsed.txns){
-    console.log(t.appTrace());
+    if(t.appCallRejected()) console.log(t.appTrace());
+    if(t.logicSigRejected()) console.log(t.lsigTrace());
   }
+
 })();
 
 
