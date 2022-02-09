@@ -10,7 +10,7 @@ from sandbox import get_accounts
 
 path = os.path.dirname(os.path.abspath(__file__))
 
-client = algod.AlgodClient("a" * 64, "http://127.0.0.1:4001")
+client = algod.AlgodClient("a" * 64, "http://localhost:4001")
 
 arg = "succeed"
 if len(sys.argv) > 1:
@@ -19,29 +19,25 @@ if len(sys.argv) > 1:
 
 def do_dryrun():
     accts = get_accounts()
-    (addr, pk) = accts[0]
+    addr, pk = accts[0]
 
-    app_id = deploy_app(addr, pk)
-    app_addr = logic.get_application_address(app_id)
+    app_id, app_addr = deploy_app(addr, pk)
     print("Created application {} with address: {}".format(app_id, app_addr))
 
-    lsa = get_lsig()
-    sig_addr = lsa.address()
-    print("Created logic sig with address: {}".format(sig_addr))
+    lsa, sig_addr = get_lsig()
+    print("Created Signature with address: {}".format(sig_addr))
 
     # Get params for txns
     sp = client.suggested_params()
 
     # create trnansactions we wish to test
-    pay_txn = PaymentTxn(addr, sp, lsa.address(), 10000)
-    app_txn = ApplicationCallTxn(
-        lsa.address(), sp, app_id, OnComplete.NoOpOC, app_args=[arg]
-    )
+    pay_txn = PaymentTxn(addr, sp, sig_addr, 10000)
+    app_txn = ApplicationCallTxn( sig_addr, sp, app_id, OnComplete.NoOpOC, app_args=[arg])
 
     # set group id
     assign_group_id([pay_txn, app_txn])
 
-    # sign them
+    # sign 'em
     spay_txn = pay_txn.sign(pk)
     sapp_txn = LogicSigTransaction(app_txn, lsa)
 
@@ -58,7 +54,7 @@ def do_dryrun():
             print("\nLsig Trace\n{}".format(txn.lsig_trace(0)))
 
 
-def deploy_app(addr, pk) -> int:
+def deploy_app(addr, pk):
     with open(os.path.join(path, "../approval.teal"), "r") as f:
         approval_src = f.read().strip()
 
@@ -83,15 +79,20 @@ def deploy_app(addr, pk) -> int:
 
     res = wait_for_confirmation(client, txid, 3)
 
-    return res["application-index"]
+    app_id = res["application-index"]
+    app_addr = logic.get_application_address(app_id)
+    return app_id, app_addr
 
 
-def get_lsig() -> LogicSigAccount:
+def get_lsig():
     with open(os.path.join(path, "../sig.teal"), "r") as f:
         program = f.read().strip()
 
     res = client.compile(program)
-    return LogicSigAccount(b64decode(res["result"]))
+    lsa = LogicSigAccount(b64decode(res["result"]))
+    sig_addr = lsa.address()
+
+    return lsa, sig_addr
 
 
 if __name__ == "__main__":
